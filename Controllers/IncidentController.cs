@@ -60,6 +60,21 @@ public class IncidentController : ControllerBase
         return NoContent();
     }
 
+    [HttpPut("{id}/resolver")]
+    public IActionResult Resolve(Guid id)
+    {
+        var result = incidents.FirstOrDefault(i => i.Id == id);
+
+        if (result is null) return NotFound();
+
+        if (result.Status == Enums.IncidentStatus.Resuelta) return Conflict();
+        
+        result.Status = Enums.IncidentStatus.Resuelta;
+
+        return NoContent();    
+    }
+
+
     [HttpDelete("{id}")]
     public IActionResult Delete(Guid id)
     {
