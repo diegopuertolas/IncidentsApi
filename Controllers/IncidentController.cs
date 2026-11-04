@@ -15,4 +15,19 @@ public class IncidentController : ControllerBase
         new Incident { Id = 3, Title = "Fallo en la base de datos", Description = "Hay un fallo en la base de datos", AssignedTechnician = "Adrián", DateCreated = DateTime.Now, Priority = 5, Status =IncidentStatus.EnProceso },
     };
     
+    [HttpGet]
+    public ActionResult<IEnumerable<Incident>> GetAllIncidents()
+    {
+        return Ok(incidents);
+    }
+
+    [HttpGet("{id}")]
+    public ActionResult<Incident> GetIncidentById(int id)
+    {
+        var result = incidents.FirstOrDefault(i => i.Id == id);
+        
+        if (result is null) return NotFound();
+
+        return Ok(result);
+    }
 }
