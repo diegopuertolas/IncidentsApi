@@ -46,4 +46,27 @@ public class IncidentController : ControllerBase
 
         return CreatedAtAction(nameof(GetIncidentById), new { id = result.Id }, result);
     }
+
+    [HttpPut("{id}")]
+    public IActionResult Put(Guid id, [FromBody] UpdateIncidentDto incident)
+    {
+        var result = incidents.FirstOrDefault(i => i.Id == id); 
+
+        result.Title = incident.Title;
+        result.Description = incident.Description;
+        result.AssignedTechnician = incident.AssignedTechnician;
+        result.Priority = incident.Priority;
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    public IActionResult Delete(Guid id)
+    {
+        var result = incidents.FirstOrDefault(i => i.Id == id);
+
+        incidents.Remove(result);
+
+        return NoContent();
+    }
 }
