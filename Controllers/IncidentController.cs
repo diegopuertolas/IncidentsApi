@@ -58,8 +58,7 @@ public class IncidentController : ControllerBase
 
     [HttpPost]
     public ActionResult<Incident> Post([FromBody] CreateIncidentDto incident)
-    {
-        if (incident.Title.Length == 0 || incident.Description.Length == 0 || incident.Priority < 1 || incident.Priority > 5 ) return BadRequest();
+    {    
         var result = new Incident
         {
             Title = incident.Title,
@@ -77,6 +76,8 @@ public class IncidentController : ControllerBase
     public IActionResult Put(Guid id, [FromBody] UpdateIncidentDto incident)
     {
         var result = incidents.FirstOrDefault(i => i.Id == id); 
+
+        if (result is null) return NotFound();
 
         result.Title = incident.Title;
         result.Description = incident.Description;
@@ -105,6 +106,8 @@ public class IncidentController : ControllerBase
     public IActionResult Delete(Guid id)
     {
         var result = incidents.FirstOrDefault(i => i.Id == id);
+
+        if (result is null) return NotFound();
 
         incidents.Remove(result);
 
