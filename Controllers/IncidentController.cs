@@ -31,9 +31,35 @@ public class IncidentController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("prioritarias")]
+    public ActionResult<IEnumerable<Incident>> GetPriorityIncidenta([FromQuery] int cantidad = 3)
+    {
+        if (cantidad <= 0) return BadRequest();
+
+        var result = incidents
+            .OrderByDescending(i => i.Priority)
+            .Take(cantidad)
+            .ToList();
+
+        return Ok(result);
+    }
+
+    [HttpGet("buscar")]
+    public ActionResult<IEnumerable<Incident>> GetByTitle([FromQuery] string title)
+    {
+        if (string.IsNullOrWhiteSpace(title)) return Ok(new List<Incident>());
+        
+        var result = incidents
+            .Where(i => i.Title.Contains(title, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        return Ok(result);
+    }
+
     [HttpPost]
     public ActionResult<Incident> Post([FromBody] CreateIncidentDto incident)
     {
+        if (incident.Title.Length == 0 || incident.Description.Length == 0 || incident.Priority < 1 || incident.Priority > 5 ) return BadRequest();
         var result = new Incident
         {
             Title = incident.Title,
