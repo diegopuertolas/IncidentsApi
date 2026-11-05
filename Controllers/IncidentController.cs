@@ -1,5 +1,6 @@
 using ItIncidents.Api.DTO;
 using ItIncidents.Api.Models;
+using ItIncidents.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ItIncidents.Api.Controllers;
@@ -8,23 +9,23 @@ namespace ItIncidents.Api.Controllers;
 [Route("api/[controller]")]
 public class IncidentController : ControllerBase
 {
-    private static readonly List<Incident> incidents = new List<Incident>
+    private readonly IIncidentsRepository _repository;
+
+    public IncidentController(IIncidentsRepository repository)
     {
-        new Incident { Title = "Fallo en el frontend", Description = "Hay un fallo en el frontend", AssignedTechnician = "Diego", Priority = 3 } ,
-        new Incident { Title = "Fallo en el backend", Description = "Hay un fallo en el backend", AssignedTechnician = "Hugo", Priority = 4  },
-        new Incident { Title = "Fallo en la base de datos", Description = "Hay un fallo en la base de datos", AssignedTechnician = "Adrián", Priority = 5 },
-    };
-    
+        _repository = repository;
+    }
+   
     [HttpGet]
     public ActionResult<IEnumerable<Incident>> GetAllIncidents()
     {
-        return Ok(incidents);
+        return Ok(_repository.GetAll());
     }
 
     [HttpGet("{id}")]
-    public ActionResult<Incident> GetIncidentById(Guid id)
+    public ActionResult<Incident> GetById(Guid id)
     {
-        var result = incidents.FirstOrDefault(i => i.Id == id);
+        var result = _repository.GetById(id);
         
         if (result is null) return NotFound();
 
@@ -36,24 +37,13 @@ public class IncidentController : ControllerBase
     {
         if (cantidad <= 0) return BadRequest();
 
-        var result = incidents
-            .OrderByDescending(i => i.Priority)
-            .Take(cantidad)
-            .ToList();
-
-        return Ok(result);
+        return Ok(_repository.GetPriorityIncidents(cantidad));
     }
 
     [HttpGet("buscar")]
     public ActionResult<IEnumerable<Incident>> GetByTitle([FromQuery] string title)
     {
-        if (string.IsNullOrWhiteSpace(title)) return Ok(new List<Incident>());
-        
-        var result = incidents
-            .Where(i => i.Title.Contains(title, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
-        return Ok(result);
+        return Ok(_repository.GetByTitle(title));
     }
 
     [HttpPost]
@@ -67,15 +57,15 @@ public class IncidentController : ControllerBase
             Priority = incident.Priority
         };
         
-        incidents.Add(result);
+        _repository.Post(result);
 
-        return CreatedAtAction(nameof(GetIncidentById), new { id = result.Id }, result);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
     [HttpPut("{id}")]
     public IActionResult Put(Guid id, [FromBody] UpdateIncidentDto incident)
     {
-        var result = incidents.FirstOrDefault(i => i.Id == id); 
+        var result = _repository.GetById(id);
 
         if (result is null) return NotFound();
 
@@ -84,19 +74,23 @@ public class IncidentController : ControllerBase
         result.AssignedTechnician = incident.AssignedTechnician;
         result.Priority = incident.Priority;
 
+        _repository.Put(result);
+
         return NoContent();
     }
 
     [HttpPut("{id}/resolver")]
     public IActionResult Resolve(Guid id)
     {
-        var result = incidents.FirstOrDefault(i => i.Id == id);
+        var result = _repository.GetById(id);
 
         if (result is null) return NotFound();
 
         if (result.Status == Enums.IncidentStatus.Resuelta) return Conflict();
         
         result.Status = Enums.IncidentStatus.Resuelta;
+        
+        _repository.Put(result);
 
         return NoContent();    
     }
@@ -105,11 +99,9 @@ public class IncidentController : ControllerBase
     [HttpDelete("{id}")]
     public IActionResult Delete(Guid id)
     {
-        var result = incidents.FirstOrDefault(i => i.Id == id);
+        var deleted = _repository.Delete(id);
 
-        if (result is null) return NotFound();
-
-        incidents.Remove(result);
+        if (!deleted) return NotFound();
 
         return NoContent();
     }
